@@ -25,6 +25,7 @@
 
 #if 0
 // TODO : Finish this Oct.6.2018
+// NOTE : 
 
 #ifndef _radiation_reaction_h_
 #define _radiation_reaction_h_
