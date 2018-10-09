@@ -31,6 +31,7 @@
 #include "utils.h"
 #include "tree.h"
 #include <boost/algorithm/string.hpp>
+#include "stellar_collapse.h"
 
 namespace eos {
   using namespace param;
