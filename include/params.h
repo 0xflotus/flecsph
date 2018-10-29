@@ -137,6 +137,16 @@ namespace param {
   DECLARE_PARAM(double,initial_dt,0.001)
 #endif
 
+//- timestep Courant-Friedrichs-Lewy factor (Dt/Dx)
+# ifndef timestep_cfl_factor
+  DECLARE_PARAM(double,timestep_cfl_factor,0.25)
+# endif
+
+//- adaptive timestepping flag
+#ifndef adaptive_timestep
+  DECLARE_PARAM(bool,adaptive_timestep,false)
+#endif
+
 //
 // Parameters related to particle number and density
 //
@@ -181,10 +191,22 @@ namespace param {
   DECLARE_PARAM(bool, sph_update_uniform_h,false)
 # endif 
 
+//- if true, the smoothing length is variable, not the same among the 
+// particles.  
+#ifndef sph_variable_h
+  DECLARE_PARAM(bool, sph_variable_h,false)
+#endif 
+
 //
 // Geometric parameters
 //
 //- rectangular configuration parameters (e.g. sodtube in 2D/3D)
+
+// in various tests: sets the type of the domain (0:box, 1:sphere/circle)
+# ifndef domain_type
+  DECLARE_PARAM(int,domain_type,0)
+# endif
+
 #ifndef box_length
   DECLARE_PARAM(double,box_length,3.0)
 #endif
@@ -219,6 +241,10 @@ namespace param {
   DECLARE_PARAM(bool,reflect_boundaries,false)
 #endif
 
+#ifndef do_periodic_boundary
+  DECLARE_PARAM(bool,do_periodic_boundary,false)
+#endif 
+
 //
 // I/O parameters
 //
@@ -241,6 +267,11 @@ namespace param {
 #ifndef out_scalar_every
   DECLARE_PARAM(int32_t,out_scalar_every,10)
 #endif
+
+// - diagnostic info output frequency 
+#ifndef out_diagnostic_every
+  DECLARE_PARAM(int32_t,out_diagnostic_every,10);
+#endif 
 
 //- HDF5 output frequency
 #ifndef out_h5data_every
@@ -267,6 +298,12 @@ namespace param {
 #ifndef poly_gamma
   DECLARE_PARAM(double,poly_gamma,1.4)
 #endif
+
+// - which viscosity computation to use? 
+// * artificial_viscosity
+#ifndef sph_viscosity 
+  DECLARE_STRING_PARAM(sph_viscosity,"artificial_viscosity")
+#endif 
 
 //- artificial viscosity: parameter alpha (Rosswog'09, eq.59)
 #ifndef sph_viscosity_alpha
@@ -386,20 +423,30 @@ namespace param {
   DECLARE_PARAM(double,sedov_blast_radius,1.0)
 # endif
 
-// in Sedov test: set the lattice types
+// initial data lattice type: 
 # ifndef lattice_type
   DECLARE_PARAM(int,lattice_type,0)
-# endif
-
-// in Sedov test: set the lattice types
-# ifndef domain_type
-  DECLARE_PARAM(int,domain_type,0)
 # endif
 
 // in several tests: initial velocity of the flow
 # ifndef flow_velocity
   DECLARE_PARAM(double,flow_velocity,0.0)
 # endif
+
+// in Kelvin-Helmholtz instability test: density ratio
+# ifndef KH_density_ratio
+  DECLARE_PARAM(double,KH_density_ratio,2.0)
+# endif
+
+// A value from KH in Price's paper
+# ifndef KH_A 
+  DECLARE_PARAM(double, KH_A, 0.025) 
+#endif 
+
+// Lamdba value for KH in Price's paper
+#ifndef KH_lambda 
+  DECLARE_PARAM(double, KH_lambda, 1./6.) 
+#endif 
 
 //
 // Airfoil parameters
@@ -500,6 +547,13 @@ void set_param(const std::string& param_name,
   READ_NUMERIC_PARAM(initial_dt)
 # endif
 
+# ifndef timestep_cfl_factor
+  READ_NUMERIC_PARAM(timestep_cfl_factor)
+# endif
+
+# ifndef adaptive_timestep
+  READ_BOOLEAN_PARAM(adaptive_timestep)
+# endif
 
   // particle number and density --------------------------------------------
 # ifndef nparticles
@@ -532,9 +586,17 @@ void set_param(const std::string& param_name,
 
 # ifndef sph_update_uniform_h
   READ_BOOLEAN_PARAM(sph_update_uniform_h)
-# endif 
+# endif
+
+#ifndef sph_variable_h
+  READ_BOOLEAN_PARAM(sph_variable_h)
+#endif  
 
   // geometric configuration  -----------------------------------------------
+# ifndef domain_type
+  READ_NUMERIC_PARAM(domain_type)
+# endif
+
 # ifndef box_length
   READ_NUMERIC_PARAM(box_length)
 # endif
@@ -564,6 +626,10 @@ void set_param(const std::string& param_name,
   READ_BOOLEAN_PARAM(reflect_boundaries)
 # endif
 
+# ifndef do_periodic_boundary
+  READ_BOOLEAN_PARAM(do_periodic_boundary)
+# endif 
+
   // i/o parameters  --------------------------------------------------------
 # ifndef initial_data_prefix
   READ_STRING_PARAM(initial_data_prefix)
@@ -579,6 +645,10 @@ void set_param(const std::string& param_name,
 
 # ifndef out_scalar_every
   READ_NUMERIC_PARAM(out_scalar_every)
+# endif
+
+# ifndef out_diagnostic_every
+  READ_NUMERIC_PARAM(out_diagnostic_every)
 # endif
 
 # ifndef out_h5data_every
@@ -597,6 +667,10 @@ void set_param(const std::string& param_name,
 # ifndef poly_gamma
   READ_NUMERIC_PARAM(poly_gamma)
 # endif
+
+# ifndef sph_viscosity 
+  READ_STRING_PARAM(sph_viscosity)
+# endif 
 
 # ifndef sph_viscosity_alpha
   READ_NUMERIC_PARAM(sph_viscosity_alpha)
@@ -686,13 +760,21 @@ void set_param(const std::string& param_name,
   READ_NUMERIC_PARAM(lattice_type)
 # endif
 
-# ifndef domain_type
-  READ_NUMERIC_PARAM(domain_type)
-# endif
-
 # ifndef flow_velocity
   READ_NUMERIC_PARAM(flow_velocity)
 # endif
+
+# ifndef KH_density_ratio
+  READ_NUMERIC_PARAM(KH_density_ratio)
+# endif
+
+# ifndef KH_A 
+  READ_NUMERIC_PARAM(KH_A)
+# endif 
+
+# ifndef KH_lambda 
+  READ_NUMERIC_PARAM(KH_lambda)
+# endif  
 
   // airfoil parameters  ----------------------------------------------------
 # ifndef airfoil_size

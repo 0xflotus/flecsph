@@ -28,18 +28,21 @@
 
 #define OUTPUT
 
-#include "tree_topology.h" // CHANGE TO FLECSI ONE!!!
+#include "tree_topology/tree_topology.h" // CHANGE TO FLECSI ONE!!!
 #include "flecsi/geometry/point.h"
 #include "flecsi/geometry/space_vector.h"
 
 #include "user.h"
+
+enum particle_type_t {NORMAL = 0 ,WALL = 1};
 
 class body{
 
   static const size_t dimension = gdimension;
   using element_t = type_t; 
   using point_t = flecsi::point__<element_t, dimension>;
-  
+ 
+
 public:
   
   body(const point_t& position, 
@@ -59,8 +62,8 @@ public:
       density_(density),
       pressure_(pressure),
       entropy_(entropy),
-      mass_(mass),
       electronfraction_(electronfraction),
+      mass_(mass),
       smoothinglength_(smoothinglength),
       soundspeed_(0.0)
       ,internalenergy_(0.0)
@@ -73,9 +76,9 @@ public:
       //hydroforce_(point_t{})
    {};
 
-   body()
+   body(): type_(NORMAL)
    {};
-      
+
   const point_t& coordinates() const{return position_;}   
   const point_t& getPosition() const{return position_;}
   double getMass() const{return mass_;}
@@ -86,10 +89,10 @@ public:
   double getElectronfraction() const{return electronfraction_;}
   double getDensity() const{return density_;}
   point_t getVelocity() const{return velocity_;}
-  //point_t getHydroForce() const{return hydroforce_;}
-  //point_t getGravForce() const{return gravforce_;}
   point_t getVelocityhalf() const{return velocityhalf_;}
   point_t getAcceleration() const{return acceleration_;}
+  uint64_t neighbors(){return neighbors_;}
+  particle_type_t type(){return type_;};
 
   point_t getLinMomentum() const { 
     point_t res = {};
@@ -98,32 +101,32 @@ public:
     }
     return res;
   };
-  //double getDudt(){return dudt_;};
-  int64_t getId(){return id_;};
+  flecsi::topology::entity_id_t getId(){return id_;};
+  flecsi::topology::entity_id_t id(){return id_;};
   double getDt(){return dt_;};
+  double getMumax(){return mumax_;}
   int getType(){return type_;}; 
 
   bool is_wall(){return type_ == 1;};
 
+  void set_neighbors(uint64_t neighbors){neighbors_ = neighbors;}
   void setPosition(point_t position){position_ = position;}
   void setAcceleration(point_t acceleration){acceleration_ = acceleration;}
   void setVelocity(point_t velocity){velocity_ = velocity;}
   void setVelocityhalf(point_t velocityhalf){velocityhalf_ = velocityhalf;}
-  //void setGravForce(point_t gravforce){gravforce_ = gravforce;}
-  //void setHydroForce(point_t hydroforce){hydroforce_ = hydroforce;}
   void setSoundspeed(double soundspeed){soundspeed_ = soundspeed;}
   void setPressure(double pressure){pressure_ = pressure;}
   void setEntropy(double entropy){entropy_ = entropy;}
   void setElectronfraction(double electronfraction){electronfraction_ = electronfraction;}
   void setDensity(double density){density_ = density;}
   void setMass(double mass){mass_ = mass;};
-  //void setLinMomentum(point_t lin_momentum){lin_momentum_ = lin_momentum;}
   void setSmoothinglength(double smoothinglength)
     {smoothinglength_=smoothinglength;};
- // void setDudt(double dudt){dudt_ = dudt;};
   void setDt(double dt){dt_ = dt;};
-  void setId(int64_t id){id_ = id;};
-  void setType(int type){type_ = type;}; 
+  void setMumax(double mumax){mumax_ = mumax;};
+  void setId(flecsi::topology::entity_id_t id){id_ = id;};
+  void setType(particle_type_t type){type_ = type;};
+  void setType(int type){type_= static_cast<particle_type_t>(type);};
 
   // Dependent of the problem 
     double getInternalenergy() const{return internalenergy_;}
@@ -139,22 +142,6 @@ public:
     void setAdiabatic(double adiabatic){adiabatic_ = adiabatic;};
     double getDadt() const{return dadt_;};
     void setDadt(double dadt){dadt_ = dadt;};
-  #ifdef VERLET
-    double getDensityNM1(){return densityNM1_;};
-    point_t getVelocityCor(){return velocityCor_;};
-    double getDensityDt(){return densityDt_;};
-    void setDensityNM1(double densityNM1){densityNM1_ = densityNM1;};
-    void setVelocityCor(point_t velocityCor){velocityCor_ = velocityCor;};
-    void setDensityDt(double densityDt){densityDt_ = densityDt;};
-    point_t getVelocityTmp(){return velocityTmp_;};
-    double getDensityTmp(){return densityTmp_;};
-    point_t getVelocityNM1(){return velocityNM1_;};
-    void setVelocityTmp(point_t velocityTmp){velocityTmp_ = velocityTmp;};
-    void setDensityTmp(double densityTmp){densityTmp_ = densityTmp;};
-    void setVelocityNM1(point_t velocityNM1){velocityNM1_=velocityNM1;};
-    double getMaxVisc(){return maxVisc_;};
-    void setMaxVisc(double maxVisc){maxVisc_ = maxVisc;};
-  #endif
 
 
   friend std::ostream& operator<<(std::ostream& os, const body& b){
@@ -194,22 +181,11 @@ private:
   double dedt_;
   double adiabatic_; 
   double dadt_;
-  #ifdef VERLET
-  double densityNM1_;
-  point_t velocityCor_;
-  double densityDt_;
-  point_t velocityTmp_;
-  double densityTmp_;
-  point_t velocityNM1_;
-  double maxVisc_; 
-  #endif 
-  //point_t lin_momentum_; //TODO : Need to check
-  //double dudt_;
-  //point_t gravforce_;
-  //point_t hydroforce_;
   double dt_;
-  int64_t id_;
-  int type_; 
+  double mumax_;
+  flecsi::topology::entity_id_t id_;
+  particle_type_t type_;
+  int64_t neighbors_;  
 }; // class body 
   
 #endif // body_h

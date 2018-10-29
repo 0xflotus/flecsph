@@ -34,6 +34,43 @@
 namespace mpi_utils{
 
 
+  /** 
+   * @brief Simple version of all gather 
+   * Send the size of arrays and then the all gather operation
+   */
+  template<
+    typename M>
+  void 
+  mpi_allgatherv(
+    const std::vector<M>& send,
+    std::vector<M>& recv,
+    std::vector<int>& count = 0)
+  {
+    int size, rank; 
+    MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+    MPI_Comm_size(MPI_COMM_WORLD,&size);
+    
+    count.clear();
+    count.resize(size);
+    
+    int my_count = send.size(); 
+    // Gather the total size
+    MPI_Allgather(&my_count,1,MPI_INT,&count[0],1,MPI_INT,MPI_COMM_WORLD);
+    // Convert to byte 
+    std::vector<int> count_byte(size);
+    std::vector<int> offset_byte(size);
+    int64_t total = 0L;
+    for(int i = 0; i < size; ++i){
+      total += count[i];
+      count_byte[i] = count[i]*sizeof(M);
+    }
+    std::partial_sum(count_byte.begin(),count_byte.end(),&offset_byte[0]); 
+    offset_byte.insert(offset_byte.begin(),0);
+    recv.resize(total);
+    
+    MPI_Allgatherv(&send[0],count_byte[rank],MPI_BYTE,&recv[0],&count_byte[0],
+        &offset_byte[0],MPI_BYTE,MPI_COMM_WORLD);
+  }
 
   /**
  * @brief      Simple version of all to all 
@@ -93,6 +130,9 @@ namespace mpi_utils{
       &recvbuffer[0],&recvcount[0],&recvoffsets[0],MPI_BYTE,MPI_COMM_WORLD);
   }
 
+
+  // MIN REDUCTION MPI -------------------
+  
   void reduce_min(
     double& value)
   {
@@ -106,11 +146,18 @@ namespace mpi_utils{
   }
 
   void reduce_min(
+    uint64_t& value)
+  {
+    MPI_Allreduce(MPI_IN_PLACE,&value,1,MPI_INT64_T,MPI_MIN,MPI_COMM_WORLD);
+  }
+
+  void reduce_min(
     int& value)
   {
     MPI_Allreduce(MPI_IN_PLACE,&value,1,MPI_INT,MPI_MIN,MPI_COMM_WORLD);
   }
 
+  // SUM REDUCTION MPI ----------------------
 
   void reduce_sum(
     double& value)
@@ -123,6 +170,13 @@ namespace mpi_utils{
   {
     MPI_Allreduce(MPI_IN_PLACE,&value,1,MPI_FLOAT,MPI_SUM,MPI_COMM_WORLD);
   }
+  
+  void reduce_sum(
+    uint64_t& value)
+  {
+    MPI_Allreduce(MPI_IN_PLACE,&value,1,MPI_INT64_T,MPI_SUM,MPI_COMM_WORLD);
+  }
+
 
   void reduce_sum(
     int& value)
@@ -136,6 +190,36 @@ namespace mpi_utils{
     MPI_Allreduce(MPI_IN_PLACE,&value[0],gdimension,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
   }
 
+  // MAX REDUCTION MPI -------------------
+
+  void reduce_max(
+    double& value)
+  {
+    MPI_Allreduce(MPI_IN_PLACE,&value,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);
+  }
+
+  void reduce_max(
+    float& value)
+  {
+    MPI_Allreduce(MPI_IN_PLACE,&value,1,MPI_FLOAT,MPI_MAX,MPI_COMM_WORLD);
+  }
+
+  void reduce_max(
+    uint64_t& value)
+  {
+    MPI_Allreduce(MPI_IN_PLACE,&value,1,MPI_INT64_T,MPI_MAX,MPI_COMM_WORLD);
+  }
+
+  void reduce_max(
+    int& value)
+  {
+    MPI_Allreduce(MPI_IN_PLACE,&value,1,MPI_INT,MPI_MAX,MPI_COMM_WORLD);
+  }
+
+
+
+
+#if 0 
 
   /**
    * @brief      Export to a file the current tree in memory 
@@ -203,7 +287,7 @@ namespace mpi_utils{
         }    
         for(auto ent: *cur)
         {
-          entity_key_t key(ent->coordinates());
+          entity_key_t key(tree.range(),ent->coordinates());
           int64_t key_int = key.truncate_value(tree.max_depth()+2);
           if(gdimension == 3){
             output<<std::oct<<cur->id().value_()<<
@@ -242,32 +326,7 @@ namespace mpi_utils{
     output.close();
   }
 
-  /**
- * @brief      Compute the local range of particles
- * range 0 = min range 1 = max
- *
- * @param      bodies  The bodies
- * @param      range   The range
- */
-  void 
-  local_range(
-    std::vector<std::pair<entity_key_t,body>>& bodies,
-    std::array<point_t,2>& range)
-  {
-    
-    range[1] = bodies.back().second.coordinates();
-    range[0] = bodies.back().second.coordinates();
-    
-    for(auto bi: bodies){
-      for(size_t i=0;i<gdimension;++i){
-        if(bi.second.coordinates()[i]>range[1][i])
-          range[1][i] = bi.second.coordinates()[i];
-        if(bi.second.coordinates()[i]<range[0][i])
-          range[0][i] = bi.second.coordinates()[i];
-      }
-    }
-  }
-
+#endif 
 
 }; // utils
 
