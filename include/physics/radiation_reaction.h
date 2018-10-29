@@ -63,6 +63,9 @@ namespace radiation_reaction{
 
 }; //radiation reaction
 
+void pre_function(){
+}
+
 void binary_system_prop_pre_comp(){
 }
 
